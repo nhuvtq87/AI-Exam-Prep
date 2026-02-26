@@ -7,9 +7,10 @@ interface FAQMatrixProps {
   faqs: FAQItem[];
   onUpload: (materials: CourseMaterial[]) => void;
   isProcessing: boolean;
+  onRegenerate: () => void;
 }
 
-const FAQMatrix: React.FC<FAQMatrixProps> = ({ faqs, onUpload, isProcessing }) => {
+const FAQMatrix: React.FC<FAQMatrixProps> = ({ faqs, onUpload, isProcessing, onRegenerate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -46,15 +47,25 @@ const FAQMatrix: React.FC<FAQMatrixProps> = ({ faqs, onUpload, isProcessing }) =
           <p className="text-sm text-gray-500">Core concept knowledge base extracted from your study materials.</p>
         </div>
         
-        <div className="relative w-full md:w-80">
-          <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          <input
-            type="text"
-            placeholder="Search questions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-xl shadow-sm focus:ring-2 focus:ring-sjsu-blue outline-none transition-all"
-          />
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={onRegenerate}
+            disabled={isProcessing}
+            className="px-4 py-2 bg-white border border-gray-100 rounded-xl shadow-sm text-xs font-bold text-sjsu-blue hover:bg-gray-50 transition-all flex items-center space-x-2 disabled:opacity-50"
+          >
+            <i className={`fa-solid fa-arrows-rotate ${isProcessing ? 'animate-spin' : ''}`}></i>
+            <span>Regenerate Matrix</span>
+          </button>
+          <div className="relative w-full md:w-80">
+            <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input
+              type="text"
+              placeholder="Search questions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-xl shadow-sm focus:ring-2 focus:ring-sjsu-blue outline-none transition-all"
+            />
+          </div>
         </div>
       </div>
 

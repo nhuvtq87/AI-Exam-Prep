@@ -1,13 +1,19 @@
 
 import React, { useState } from 'react';
 import { simplifyConcept } from '../services/geminiService';
-import { SimplifiedConcept } from '../types';
+import { SimplifiedConcept, CourseMaterial, Note } from '../types';
 
-const ConceptSimplifier: React.FC = () => {
+interface ConceptSimplifierProps {
+  materials: CourseMaterial[];
+  notes: Note[];
+}
+
+const ConceptSimplifier: React.FC<ConceptSimplifierProps> = ({ materials, notes }) => {
   const [input, setInput] = useState('');
   const [result, setResult] = useState<SimplifiedConcept | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState('simple');
+  const [showContextPicker, setShowContextPicker] = useState(false);
 
   const handleSimplify = async () => {
     if (!input.trim() || isLoading) return;
@@ -23,6 +29,11 @@ const ConceptSimplifier: React.FC = () => {
     }
   };
 
+  const handleSelectContext = (content: string) => {
+    setInput(content.substring(0, 2000)); // Limit to first 2000 chars for simplification
+    setShowContextPicker(false);
+  };
+
   const modes = [
     { id: 'simple', label: 'Plain English', icon: 'fa-comment-dots' },
     { id: 'analogy', label: 'Use Analogies', icon: 'fa-bridge' },
@@ -31,18 +42,63 @@ const ConceptSimplifier: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
-      <header>
-        <h2 className="text-3xl font-bold text-gray-900">Concept Simplifier</h2>
-        <p className="text-gray-500">Transform complex SJSU lecture jargon into understandable ideas.</p>
+    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn pb-20">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900">Concept Simplifier</h2>
+          <p className="text-gray-500">Transform complex SJSU lecture jargon into understandable ideas.</p>
+        </div>
+        <button 
+          onClick={() => setShowContextPicker(!showContextPicker)}
+          className="px-4 py-2 bg-white border border-gray-100 rounded-xl shadow-sm text-xs font-bold text-sjsu-blue hover:bg-gray-50 transition-all flex items-center space-x-2"
+        >
+          <i className="fa-solid fa-folder-open"></i>
+          <span>Pick from Materials</span>
+        </button>
       </header>
+
+      {showContextPicker && (
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xl animate-fadeIn space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Select Source Text</h3>
+            <button onClick={() => setShowContextPicker(false)} className="text-gray-400 hover:text-gray-600">
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2">
+            {materials.map(m => (
+              <button 
+                key={m.id}
+                onClick={() => handleSelectContext(m.content)}
+                className="text-left p-3 bg-gray-50 hover:bg-blue-50 rounded-xl border border-transparent hover:border-blue-100 transition-all group"
+              >
+                <p className="text-xs font-bold text-gray-800 truncate group-hover:text-sjsu-blue">{m.name}</p>
+                <p className="text-[10px] text-gray-400 uppercase">Material</p>
+              </button>
+            ))}
+            {notes.map(n => (
+              <button 
+                key={n.id}
+                onClick={() => handleSelectContext(n.content)}
+                className="text-left p-3 bg-gray-50 hover:bg-gold-50 rounded-xl border border-transparent hover:border-gold-100 transition-all group"
+              >
+                <p className="text-xs font-bold text-gray-800 truncate group-hover:text-sjsu-gold">{n.title}</p>
+                <p className="text-[10px] text-gray-400 uppercase">Note</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
         <div className="space-y-4">
-          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Complex Concept or Text</label>
+          <div className="flex justify-between items-center">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Complex Concept or Text</label>
+            <span className="text-[10px] text-gray-300 font-bold">{input.length}/2000</span>
+          </div>
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => setInput(e.target.value.slice(0, 2000))}
             placeholder="Paste a difficult paragraph from your textbook or lecture notes here..."
             className="w-full h-40 p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-sjsu-blue outline-none transition-all resize-none text-gray-800 placeholder-gray-400"
           />

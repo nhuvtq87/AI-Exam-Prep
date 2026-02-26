@@ -15,6 +15,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
     { id: 'simplifier', icon: 'fa-wand-magic-sparkles', label: 'Simple' },
     { id: 'faq', icon: 'fa-clipboard-list', label: 'FAQs' },
     { id: 'planner', icon: 'fa-calendar-days', label: 'Plan' },
+    { id: 'notes', icon: 'fa-note-sticky', label: 'Notes' },
     { id: 'timer', icon: 'fa-stopwatch', label: 'Timer' },
     { id: 'tutor', icon: 'fa-robot', label: 'AI' },
   ];

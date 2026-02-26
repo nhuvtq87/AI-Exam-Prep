@@ -11,12 +11,15 @@ import AITutor from './components/AITutor';
 import StudyTimer from './components/StudyTimer';
 import FAQMatrix from './components/FAQMatrix';
 import ConceptSimplifier from './components/ConceptSimplifier';
-import { View, CourseMaterial, Flashcard, QuizQuestion, StudyEvent, StudySession, FAQItem } from './types';
+import NotesView from './components/NotesView';
+import OnboardingView from './components/OnboardingView';
+import { View, CourseMaterial, Flashcard, QuizQuestion, StudyEvent, StudySession, FAQItem, Note } from './types';
 import { generateFlashcards, generateQuiz, extractStudyPlan, generateFAQMatrix, fetchLinkContent } from './services/geminiService';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<View>('dashboard');
+  const [view, setView] = useState<View>('onboarding');
   const [materials, setMaterials] = useState<CourseMaterial[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [quizzes, setQuizzes] = useState<QuizQuestion[]>([]);
   const [events, setEvents] = useState<StudyEvent[]>([]);
@@ -26,16 +29,17 @@ const App: React.FC = () => {
   const [sources, setSources] = useState<any[]>([]);
   const [flashcardCount, setFlashcardCount] = useState(15);
   const [quizCount, setQuizCount] = useState(10);
+  const [courseName, setCourseName] = useState('');
 
-  const processMaterials = async (allMaterials: CourseMaterial[], fCount?: number, qCount?: number) => {
-    if (allMaterials.length === 0) return;
+  const processMaterials = async (allMaterials: CourseMaterial[], allNotes: Note[], fCount?: number, qCount?: number) => {
+    if (allMaterials.length === 0 && allNotes.length === 0) return;
 
     try {
       const [newFlashcards, newQuiz, newEvents, newFaqs] = await Promise.all([
-        generateFlashcards(allMaterials, fCount || flashcardCount),
-        generateQuiz(allMaterials, qCount || quizCount),
-        extractStudyPlan(allMaterials),
-        generateFAQMatrix(allMaterials)
+        generateFlashcards(allMaterials, allNotes, fCount || flashcardCount),
+        generateQuiz(allMaterials, allNotes, qCount || quizCount),
+        extractStudyPlan(allMaterials, allNotes),
+        generateFAQMatrix(allMaterials, allNotes)
       ]);
 
       setFlashcards(newFlashcards);
@@ -58,7 +62,7 @@ const App: React.FC = () => {
       const updated = [...prev, ...newMaterials];
       // Process in background using the updated list
       setIsProcessing(true);
-      processMaterials(updated).finally(() => setIsProcessing(false));
+      processMaterials(updated, notes).finally(() => setIsProcessing(false));
       return updated;
     });
   };
@@ -79,7 +83,7 @@ const App: React.FC = () => {
       
       setMaterials(prev => {
         const updated = [...prev, newMaterial];
-        processMaterials(updated).finally(() => setIsProcessing(false));
+        processMaterials(updated, notes).finally(() => setIsProcessing(false));
         return updated;
       });
     } catch (error) {
@@ -87,6 +91,43 @@ const App: React.FC = () => {
       alert("Failed to process the link. Ensure it's publicly accessible.");
       setIsProcessing(false);
     }
+  };
+
+  const handleAddNote = (note: Note) => {
+    setNotes(prev => {
+      const updated = [...prev, note];
+      setIsProcessing(true);
+      processMaterials(materials, updated).finally(() => setIsProcessing(false));
+      return updated;
+    });
+  };
+
+  const handleUpdateNote = (updatedNote: Note) => {
+    setNotes(prev => {
+      const updated = prev.map(n => n.id === updatedNote.id ? updatedNote : n);
+      setIsProcessing(true);
+      processMaterials(materials, updated).finally(() => setIsProcessing(false));
+      return updated;
+    });
+  };
+
+  const handleDeleteNote = (id: string) => {
+    setNotes(prev => {
+      const updated = prev.filter(n => n.id !== id);
+      setIsProcessing(true);
+      processMaterials(materials, updated).finally(() => setIsProcessing(false));
+      return updated;
+    });
+  };
+
+  const handleOnboardingComplete = (name: string, initialMaterials: CourseMaterial[]) => {
+    setCourseName(name);
+    setMaterials(initialMaterials);
+    setIsProcessing(true);
+    processMaterials(initialMaterials, []).finally(() => {
+      setIsProcessing(false);
+      setView('dashboard');
+    });
   };
 
   const handleAddEvent = (event: StudyEvent) => {
@@ -106,11 +147,11 @@ const App: React.FC = () => {
   };
 
   const handleRegenerateFlashcards = async (count: number) => {
-    if (materials.length === 0) return;
+    if (materials.length === 0 && notes.length === 0) return;
     setFlashcardCount(count);
     setIsProcessing(true);
     try {
-      const newFlashcards = await generateFlashcards(materials, count);
+      const newFlashcards = await generateFlashcards(materials, notes, count);
       setFlashcards(newFlashcards);
     } catch (error) {
       console.error("Flashcard Regeneration Error:", error);
@@ -121,15 +162,29 @@ const App: React.FC = () => {
   };
 
   const handleRegenerateQuiz = async (count: number) => {
-    if (materials.length === 0) return;
+    if (materials.length === 0 && notes.length === 0) return;
     setQuizCount(count);
     setIsProcessing(true);
     try {
-      const newQuiz = await generateQuiz(materials, count);
+      const newQuiz = await generateQuiz(materials, notes, count);
       setQuizzes(newQuiz);
     } catch (error) {
       console.error("Quiz Regeneration Error:", error);
       alert("Failed to regenerate quiz.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRegenerateFAQ = async () => {
+    if (materials.length === 0 && notes.length === 0) return;
+    setIsProcessing(true);
+    try {
+      const newFaqs = await generateFAQMatrix(materials, notes);
+      setFaqs(newFaqs);
+    } catch (error) {
+      console.error("FAQ Regeneration Error:", error);
+      alert("Failed to regenerate FAQ Matrix.");
     } finally {
       setIsProcessing(false);
     }
@@ -207,23 +262,33 @@ const App: React.FC = () => {
       case 'faq':
         return (
           <div className="space-y-8">
-            <FAQMatrix faqs={faqs} onUpload={handleFileUpload} isProcessing={isProcessing} />
+            <FAQMatrix 
+              faqs={faqs} 
+              onUpload={handleFileUpload} 
+              isProcessing={isProcessing} 
+              onRegenerate={handleRegenerateFAQ}
+            />
             {commonUploadSection}
           </div>
         );
       case 'simplifier':
-        return <ConceptSimplifier />;
+        return <ConceptSimplifier materials={materials} notes={notes} />;
       case 'planner':
         return <StudyPlanner events={events} onAddEvent={handleAddEvent} onUpdateEvent={handleUpdateEvent} onDeleteEvent={handleDeleteEvent} />;
+      case 'notes':
+        return <NotesView notes={notes} onAddNote={handleAddNote} onUpdateNote={handleUpdateNote} onDeleteNote={handleDeleteNote} />;
       case 'timer':
         return (
           <StudyTimer 
             materials={materials} 
+            notes={notes}
             onSessionComplete={handleSessionComplete} 
           />
         );
       case 'tutor':
-        return <AITutor materials={materials} />;
+        return <AITutor materials={materials} notes={notes} />;
+      case 'onboarding':
+        return <OnboardingView onComplete={handleOnboardingComplete} isProcessing={isProcessing} />;
       default:
         return <Dashboard materials={materials} events={events} sessions={sessions} onStartQuiz={() => setView('quiz')} />;
     }

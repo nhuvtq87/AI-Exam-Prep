@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { CourseMaterial, StudySession } from '../types';
+import { CourseMaterial, StudySession, Note } from '../types';
 
 interface StudyTimerProps {
   materials: CourseMaterial[];
+  notes: Note[];
   onSessionComplete: (session: StudySession) => void;
 }
 
-const StudyTimer: React.FC<StudyTimerProps> = ({ materials, onSessionComplete }) => {
+const StudyTimer: React.FC<StudyTimerProps> = ({ materials, notes, onSessionComplete }) => {
   const [workTime, setWorkTime] = useState(25);
   const [breakTime, setBreakTime] = useState(5);
   const [timeLeft, setTimeLeft] = useState(workTime * 60);
@@ -165,7 +166,12 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ materials, onSessionComplete })
               className="w-full p-3 bg-gray-50 rounded-xl border-none text-sm font-bold focus:ring-2 focus:ring-sjsu-blue transition-all"
             >
               <option value="General Study">General Study</option>
-              {materials.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+              <optgroup label="Materials">
+                {materials.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+              </optgroup>
+              <optgroup label="Notes">
+                {notes.map(n => <option key={n.id} value={n.title}>{n.title}</option>)}
+              </optgroup>
             </select>
           </div>
         </div>

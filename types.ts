@@ -55,4 +55,13 @@ export interface SimplifiedConcept {
   keyTakeaways: string[];
 }
 
-export type View = 'dashboard' | 'flashcards' | 'quiz' | 'planner' | 'tutor' | 'timer' | 'faq' | 'simplifier';
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  course?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type View = 'dashboard' | 'flashcards' | 'quiz' | 'planner' | 'tutor' | 'timer' | 'faq' | 'simplifier' | 'notes' | 'onboarding';

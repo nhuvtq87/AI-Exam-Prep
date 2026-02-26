@@ -1,16 +1,16 @@
 import { GoogleGenAI, Type, Part } from "@google/genai";
-import { Flashcard, QuizQuestion, StudyEvent, FAQItem, SimplifiedConcept, CourseMaterial } from "../types";
+import { Flashcard, QuizQuestion, StudyEvent, FAQItem, SimplifiedConcept, CourseMaterial, Note } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
- * Converts CourseMaterial array into Gemini-compatible Parts.
- * Implements streamlined RAG by truncating extremely large files to high-yield sections.
+ * Converts CourseMaterial and Note arrays into Gemini-compatible Parts.
+ * Implements streamlined RAG by truncating extremely large items to high-yield sections.
  */
-const MAX_FILE_CONTEXT = 20000; // ~5000 tokens per file limit for efficiency
+const MAX_ITEM_CONTEXT = 20000; // ~5000 tokens per item limit for efficiency
 
-const materialsToParts = (materials: CourseMaterial[]): Part[] => {
-  return materials.map(m => {
+const contextToParts = (materials: CourseMaterial[], notes: Note[] = []): Part[] => {
+  const materialParts = materials.map(m => {
     if (m.content.startsWith('data:')) {
       const [header, data] = m.content.split(',');
       const mimeType = header.split(':')[1].split(';')[0];
@@ -22,13 +22,23 @@ const materialsToParts = (materials: CourseMaterial[]): Part[] => {
       };
     }
     
-    // Streamlined RAG: Truncate to the most relevant academic sections (usually start/end or first 20k chars)
-    const content = m.content.length > MAX_FILE_CONTEXT 
-      ? m.content.substring(0, MAX_FILE_CONTEXT) + "\n\n[... Remaining content truncated for processing efficiency ...]"
+    // Streamlined RAG: Truncate to the most relevant academic sections
+    const content = m.content.length > MAX_ITEM_CONTEXT 
+      ? m.content.substring(0, MAX_ITEM_CONTEXT) + "\n\n[... Remaining content truncated for processing efficiency ...]"
       : m.content;
 
     return { text: `File: ${m.name}\nContent:\n${content}` };
   });
+
+  const noteParts = notes.map(n => {
+    const content = n.content.length > MAX_ITEM_CONTEXT
+      ? n.content.substring(0, MAX_ITEM_CONTEXT) + "\n\n[... Remaining content truncated ...]"
+      : n.content;
+    
+    return { text: `Note Title: ${n.title}\nCourse: ${n.course || 'General'}\nContent:\n${content}` };
+  });
+
+  return [...materialParts, ...noteParts];
 };
 
 const SYSTEM_INSTRUCTION = `You are an expert SJSU academic tutor and document analyst. 
@@ -60,8 +70,8 @@ STRICT RULE: Extract ONLY the main academic or informational content present on 
   };
 };
 
-export const generateFlashcards = async (materials: CourseMaterial[], count: number = 15): Promise<Flashcard[]> => {
-  const parts = materialsToParts(materials);
+export const generateFlashcards = async (materials: CourseMaterial[], notes: Note[] = [], count: number = 15): Promise<Flashcard[]> => {
+  const parts = contextToParts(materials, notes);
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: {
@@ -99,8 +109,8 @@ export const generateFlashcards = async (materials: CourseMaterial[], count: num
   return data.flashcards || [];
 };
 
-export const generateQuiz = async (materials: CourseMaterial[], count: number = 10): Promise<QuizQuestion[]> => {
-  const parts = materialsToParts(materials);
+export const generateQuiz = async (materials: CourseMaterial[], notes: Note[] = [], count: number = 10): Promise<QuizQuestion[]> => {
+  const parts = contextToParts(materials, notes);
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: {
@@ -139,8 +149,8 @@ export const generateQuiz = async (materials: CourseMaterial[], count: number = 
   return data.questions || [];
 };
 
-export const extractStudyPlan = async (materials: CourseMaterial[]): Promise<StudyEvent[]> => {
-  const parts = materialsToParts(materials);
+export const extractStudyPlan = async (materials: CourseMaterial[], notes: Note[] = []): Promise<StudyEvent[]> => {
+  const parts = contextToParts(materials, notes);
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: {
@@ -177,8 +187,8 @@ export const extractStudyPlan = async (materials: CourseMaterial[]): Promise<Stu
   }));
 };
 
-export const generateFAQMatrix = async (materials: CourseMaterial[]): Promise<FAQItem[]> => {
-  const parts = materialsToParts(materials);
+export const generateFAQMatrix = async (materials: CourseMaterial[], notes: Note[] = []): Promise<FAQItem[]> => {
+  const parts = contextToParts(materials, notes);
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: {
@@ -235,8 +245,8 @@ Concept: ${concept}`,
   return JSON.parse(response.text);
 };
 
-export const chatWithContext = async (query: string, materials: CourseMaterial[]) => {
-  const parts = materialsToParts(materials);
+export const chatWithContext = async (query: string, materials: CourseMaterial[], notes: Note[] = []) => {
+  const parts = contextToParts(materials, notes);
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: {
