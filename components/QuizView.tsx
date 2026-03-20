@@ -5,7 +5,7 @@ import FileUpload from './FileUpload';
 
 interface QuizViewProps {
   questions: QuizQuestion[];
-  onUpload: (materials: CourseMaterial[]) => void;
+  materials: CourseMaterial[];
   isProcessing: boolean;
   onRegenerate: (count: number) => void;
   currentCount: number;
@@ -13,7 +13,7 @@ interface QuizViewProps {
 
 const QuizView: React.FC<QuizViewProps> = ({ 
   questions, 
-  onUpload, 
+  materials,
   isProcessing,
   onRegenerate,
   currentCount
@@ -44,6 +44,22 @@ const QuizView: React.FC<QuizViewProps> = ({
     };
   }, [isTimerRunning, timeLeft]);
 
+  if (materials.length === 0) {
+    return (
+      <div className="h-[60vh] flex flex-col items-center justify-center space-y-6 animate-fadeIn text-center px-4">
+        <div className="w-24 h-24 bg-gray-100 text-gray-300 rounded-full flex items-center justify-center">
+          <i className="fa-solid fa-cloud-arrow-up text-4xl"></i>
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-gray-800">No Materials Found</h2>
+          <p className="text-gray-500 max-w-sm mx-auto">
+            Please upload a document or link in the sidebar to unlock this feature.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (questions.length === 0) {
     return (
       <div className="space-y-8 animate-fadeIn">
@@ -53,31 +69,49 @@ const QuizView: React.FC<QuizViewProps> = ({
           </div>
           <h2 className="text-3xl font-bold text-gray-900">Spartan Exam Prep</h2>
           <p className="text-gray-500 max-w-lg mx-auto italic">
-            "Your academic documents are the blueprints. I am the architect of your practice exam."
+            Ready to build your practice exam. Adjust the question count and start your simulation.
           </p>
         </div>
 
-        <div className="max-w-md mx-auto bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-bold text-gray-700">Questions to Generate</label>
-            <span className="text-sjsu-blue font-black">{selectedCount}</span>
+        <div className="max-w-md mx-auto bg-white p-8 rounded-3xl border border-gray-100 shadow-xl space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold text-gray-700">Questions to Generate</label>
+              <span className="text-sjsu-blue font-black text-xl">{selectedCount}</span>
+            </div>
+            <input 
+              type="range" 
+              min="10" 
+              max="30" 
+              step="1" 
+              value={selectedCount}
+              onChange={(e) => setSelectedCount(parseInt(e.target.value))}
+              className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-sjsu-blue"
+            />
+            <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              <span>10 Questions</span>
+              <span>30 Questions</span>
+            </div>
           </div>
-          <input 
-            type="range" 
-            min="10" 
-            max="30" 
-            step="1" 
-            value={selectedCount}
-            onChange={(e) => setSelectedCount(parseInt(e.target.value))}
-            className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-sjsu-blue"
-          />
-          <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            <span>10 Questions</span>
-            <span>30 Questions</span>
-          </div>
-        </div>
 
-        <FileUpload onUpload={onUpload} isProcessing={isProcessing} />
+          <button
+            onClick={() => onRegenerate(selectedCount)}
+            disabled={isProcessing}
+            className="w-full py-4 bg-sjsu-gold text-sjsu-blue rounded-2xl font-black shadow-lg shadow-yellow-100 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center space-x-3"
+          >
+            {isProcessing ? (
+              <>
+                <i className="fa-solid fa-spinner animate-spin"></i>
+                <span>Building Exam...</span>
+              </>
+            ) : (
+              <>
+                <i className="fa-solid fa-bolt"></i>
+                <span>Generate Practice Quiz</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     );
   }
@@ -346,7 +380,6 @@ const QuizView: React.FC<QuizViewProps> = ({
           <h4 className="text-sm font-bold text-gray-800">Target Specific Topics</h4>
           <p className="text-xs text-gray-500">Upload individual chapters for focused sub-exams.</p>
         </div>
-        <FileUpload onUpload={onUpload} isProcessing={isProcessing} />
       </div>
     </div>
   );

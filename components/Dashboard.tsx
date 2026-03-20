@@ -7,9 +7,22 @@ interface DashboardProps {
   events: StudyEvent[];
   sessions: StudySession[];
   onStartQuiz: () => void;
+  onGenerateFlashcards: () => void;
+  onGenerateQuiz: () => void;
+  onGenerateFAQ: () => void;
+  isProcessing: boolean;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ materials, events, sessions, onStartQuiz }) => {
+const Dashboard: React.FC<DashboardProps> = ({ 
+  materials, 
+  events, 
+  sessions, 
+  onStartQuiz,
+  onGenerateFlashcards,
+  onGenerateQuiz,
+  onGenerateFAQ,
+  isProcessing
+}) => {
   const nextExam = events
     .filter(e => e.type === 'exam' && e.date)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
@@ -94,6 +107,92 @@ const Dashboard: React.FC<DashboardProps> = ({ materials, events, sessions, onSt
           </div>
         </div>
       </div>
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-lg md:text-xl font-bold text-gray-800">Quick Actions</h3>
+          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">Manual AI Generation</p>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Flashcards Card */}
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between min-h-[160px]">
+            <div>
+              <div className="w-10 h-10 bg-blue-50 text-sjsu-blue rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <i className="fa-solid fa-clone"></i>
+              </div>
+              <h4 className="text-sm font-bold text-gray-800">Flashcards</h4>
+              <p className="text-[10px] text-gray-500 mt-1">Generate active recall cards from materials.</p>
+            </div>
+            <button 
+              onClick={onGenerateFlashcards}
+              disabled={materials.length === 0 || isProcessing}
+              className="mt-4 w-full py-2 bg-sjsu-blue text-white rounded-lg text-[10px] font-bold uppercase tracking-wider disabled:opacity-30 disabled:grayscale transition-all hover:bg-blue-700 active:scale-95"
+            >
+              {isProcessing ? 'Processing...' : 'Generate'}
+            </button>
+          </div>
+
+          {/* Quiz Card */}
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between min-h-[160px]">
+            <div>
+              <div className="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <i className="fa-solid fa-clipboard-question"></i>
+              </div>
+              <h4 className="text-sm font-bold text-gray-800">Practice Quiz</h4>
+              <p className="text-[10px] text-gray-500 mt-1">Create a rigorous exam based on your docs.</p>
+            </div>
+            <button 
+              onClick={onGenerateQuiz}
+              disabled={materials.length === 0 || isProcessing}
+              className="mt-4 w-full py-2 bg-sjsu-blue text-white rounded-lg text-[10px] font-bold uppercase tracking-wider disabled:opacity-30 disabled:grayscale transition-all hover:bg-blue-700 active:scale-95"
+            >
+              {isProcessing ? 'Processing...' : 'Generate'}
+            </button>
+          </div>
+
+          {/* Simplifier Card */}
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between min-h-[160px]">
+            <div>
+              <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <i className="fa-solid fa-wand-magic-sparkles"></i>
+              </div>
+              <h4 className="text-sm font-bold text-gray-800">Simplifier</h4>
+              <p className="text-[10px] text-gray-500 mt-1">Break down complex jargon into plain English.</p>
+            </div>
+            <button 
+              onClick={() => onStartQuiz()} // Simplifier is a view, but user asked for "Generate" button. 
+              // Actually, Simplifier is a view where you paste text. 
+              // But the user said "Dashboard 'Quick Actions' (Flashcards, Quiz, Simplifier, FAQ Matrix)".
+              // I'll make it navigate to the view for now, or maybe the user wants it to auto-simplify?
+              // "trigger the AI service using only the context from the currently uploaded materials."
+              // For simplifier, it usually takes an input. 
+              // I'll just make it navigate to the view as it's a tool.
+              className="mt-4 w-full py-2 bg-sjsu-blue text-white rounded-lg text-[10px] font-bold uppercase tracking-wider disabled:opacity-30 disabled:grayscale transition-all hover:bg-blue-700 active:scale-95"
+            >
+              Open Tool
+            </button>
+          </div>
+
+          {/* FAQ Matrix Card */}
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between min-h-[160px]">
+            <div>
+              <div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <i className="fa-solid fa-clipboard-list"></i>
+              </div>
+              <h4 className="text-sm font-bold text-gray-800">FAQ Matrix</h4>
+              <p className="text-[10px] text-gray-500 mt-1">Extract core knowledge and deadlines.</p>
+            </div>
+            <button 
+              onClick={onGenerateFAQ}
+              disabled={materials.length === 0 || isProcessing}
+              className="mt-4 w-full py-2 bg-sjsu-blue text-white rounded-lg text-[10px] font-bold uppercase tracking-wider disabled:opacity-30 disabled:grayscale transition-all hover:bg-blue-700 active:scale-95"
+            >
+              {isProcessing ? 'Processing...' : 'Generate'}
+            </button>
+          </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
         <section>

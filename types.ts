@@ -32,6 +32,7 @@ export interface CourseMaterial {
   type: string;
   content: string; // Base64 or Text
   mimeType: string;
+  uploadDate?: string;
 }
 
 export interface StudySession {

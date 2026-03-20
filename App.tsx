@@ -189,13 +189,6 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
-    const commonUploadSection = (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-        <FileUpload onUpload={handleFileUpload} isProcessing={isProcessing} />
-        <LinkImporter onImport={handleLinkImport} isProcessing={isProcessing} />
-      </div>
-    );
-
     switch (view) {
       case 'dashboard':
         return (
@@ -233,41 +226,32 @@ const App: React.FC = () => {
         );
       case 'flashcards':
         return (
-          <div className="space-y-8">
-            <FlashcardView 
-              flashcards={flashcards} 
-              onUpload={handleFileUpload} 
-              isProcessing={isProcessing} 
-              onRegenerate={handleRegenerateFlashcards}
-              currentCount={flashcardCount}
-            />
-            {commonUploadSection}
-          </div>
+          <FlashcardView 
+            flashcards={flashcards} 
+            materials={materials}
+            isProcessing={isProcessing} 
+            onRegenerate={handleRegenerateFlashcards}
+            currentCount={flashcardCount}
+          />
         );
       case 'quiz':
         return (
-          <div className="space-y-8">
-            <QuizView 
-              questions={quizzes} 
-              onUpload={handleFileUpload} 
-              isProcessing={isProcessing} 
-              onRegenerate={handleRegenerateQuiz}
-              currentCount={quizCount}
-            />
-            {commonUploadSection}
-          </div>
+          <QuizView 
+            questions={quizzes} 
+            materials={materials}
+            isProcessing={isProcessing} 
+            onRegenerate={handleRegenerateQuiz}
+            currentCount={quizCount}
+          />
         );
       case 'faq':
         return (
-          <div className="space-y-8">
-            <FAQMatrix 
-              faqs={faqs} 
-              onUpload={handleFileUpload} 
-              isProcessing={isProcessing} 
-              onRegenerate={handleRegenerateFAQ}
-            />
-            {commonUploadSection}
-          </div>
+          <FAQMatrix 
+            faqs={faqs} 
+            materials={materials}
+            isProcessing={isProcessing} 
+            onRegenerate={handleRegenerateFAQ}
+          />
         );
       case 'simplifier':
         return <ConceptSimplifier materials={materials} notes={notes} />;
@@ -294,7 +278,14 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
-      <Sidebar currentView={view} onViewChange={setView} />
+      <Sidebar 
+        currentView={view} 
+        onViewChange={setView} 
+        materials={materials}
+        onUpload={handleFileUpload}
+        onImport={handleLinkImport}
+        isProcessing={isProcessing}
+      />
       <main className="flex-1 p-4 md:p-8 lg:p-12 pb-24 md:pb-8 max-h-screen overflow-y-auto">
         <div className="max-w-6xl mx-auto">
           {renderContent()}

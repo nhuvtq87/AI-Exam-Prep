@@ -13,9 +13,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 interface FileUploadProps {
   onUpload: (materials: CourseMaterial[]) => void;
   isProcessing: boolean;
+  compact?: boolean;
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isProcessing }) => {
+const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isProcessing, compact }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /**
@@ -247,6 +248,37 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isProcessing }) => {
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  if (compact) {
+    return (
+      <div className="w-full">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+          multiple
+          accept=".pdf,.pptx,.ppt,.docx,.doc,image/*"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isProcessing}
+          className={`w-full py-3 px-4 bg-white/10 hover:bg-white/20 text-white border border-white/10 rounded-xl transition-all flex items-center justify-center space-x-3 group ${
+            isProcessing ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        >
+          {isProcessing ? (
+            <i className="fa-solid fa-spinner animate-spin text-xs"></i>
+          ) : (
+            <i className="fa-solid fa-cloud-arrow-up text-xs text-sjsu-gold group-hover:scale-110 transition-transform"></i>
+          )}
+          <span className="text-[11px] font-bold uppercase tracking-wider">
+            {isProcessing ? 'Processing...' : 'Drop or Click'}
+          </span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex flex-col items-center justify-center space-y-4 text-center">

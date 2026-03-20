@@ -5,12 +5,12 @@ import FileUpload from './FileUpload';
 
 interface FAQMatrixProps {
   faqs: FAQItem[];
-  onUpload: (materials: CourseMaterial[]) => void;
+  materials: CourseMaterial[];
   isProcessing: boolean;
   onRegenerate: () => void;
 }
 
-const FAQMatrix: React.FC<FAQMatrixProps> = ({ faqs, onUpload, isProcessing, onRegenerate }) => {
+const FAQMatrix: React.FC<FAQMatrixProps> = ({ faqs, materials, isProcessing, onRegenerate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -24,6 +24,22 @@ const FAQMatrix: React.FC<FAQMatrixProps> = ({ faqs, onUpload, isProcessing, onR
     return matchesSearch && matchesCategory;
   });
 
+  if (materials.length === 0) {
+    return (
+      <div className="h-[60vh] flex flex-col items-center justify-center space-y-6 animate-fadeIn text-center px-4">
+        <div className="w-24 h-24 bg-gray-100 text-gray-300 rounded-full flex items-center justify-center">
+          <i className="fa-solid fa-cloud-arrow-up text-4xl"></i>
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-gray-800">No Materials Found</h2>
+          <p className="text-gray-500 max-w-sm mx-auto">
+            Please upload a document or link in the sidebar to unlock this feature.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (faqs.length === 0) {
     return (
       <div className="space-y-8 animate-fadeIn">
@@ -31,9 +47,26 @@ const FAQMatrix: React.FC<FAQMatrixProps> = ({ faqs, onUpload, isProcessing, onR
           <div className="w-20 h-20 bg-blue-50 text-sjsu-blue rounded-full flex items-center justify-center mb-4">
             <i className="fa-solid fa-clipboard-list text-3xl"></i>
           </div>
-          <h3 className="text-2xl font-bold text-gray-800">No FAQs Yet</h3>
-          <p className="text-gray-500 mt-2 mb-8 max-w-sm">Upload course materials to generate a structured FAQ Matrix automatically.</p>
-          <FileUpload onUpload={onUpload} isProcessing={isProcessing} />
+          <h3 className="text-2xl font-bold text-gray-800">Generate FAQ Matrix</h3>
+          <p className="text-gray-500 mt-2 mb-8 max-w-sm">Ready to extract the core concept knowledge base from your study materials.</p>
+          
+          <button
+            onClick={onRegenerate}
+            disabled={isProcessing}
+            className="px-12 py-4 bg-sjsu-blue text-white rounded-2xl font-black shadow-lg shadow-blue-100 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center space-x-3"
+          >
+            {isProcessing ? (
+              <>
+                <i className="fa-solid fa-spinner animate-spin"></i>
+                <span>Extracting Knowledge...</span>
+              </>
+            ) : (
+              <>
+                <i className="fa-solid fa-wand-magic-sparkles"></i>
+                <span>Generate FAQ Matrix</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     );
@@ -126,7 +159,6 @@ const FAQMatrix: React.FC<FAQMatrixProps> = ({ faqs, onUpload, isProcessing, onR
           <h4 className="text-sm font-bold text-gray-800">Expand Knowledge Base</h4>
           <p className="text-xs text-gray-500">Upload more notes to generate more FAQs.</p>
         </div>
-        <FileUpload onUpload={onUpload} isProcessing={isProcessing} />
       </div>
     </div>
   );
