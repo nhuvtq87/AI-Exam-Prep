@@ -14,7 +14,7 @@ import ConceptSimplifier from './components/ConceptSimplifier';
 import NotesView from './components/NotesView';
 import OnboardingView from './components/OnboardingView';
 import { View, CourseMaterial, Flashcard, QuizQuestion, StudyEvent, StudySession, FAQItem, Note } from './types';
-import { generateFlashcards, generateQuiz, extractStudyPlan, generateFAQMatrix, fetchLinkContent } from './services/geminiService';
+import { generateFlashcards, generateQuiz, generateFAQMatrix, fetchLinkContent } from './services/geminiService';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('onboarding');
@@ -35,16 +35,14 @@ const App: React.FC = () => {
     if (allMaterials.length === 0 && allNotes.length === 0) return;
 
     try {
-      const [newFlashcards, newQuiz, newEvents, newFaqs] = await Promise.all([
+      const [newFlashcards, newQuiz, newFaqs] = await Promise.all([
         generateFlashcards(allMaterials, allNotes, fCount || flashcardCount),
         generateQuiz(allMaterials, allNotes, qCount || quizCount),
-        extractStudyPlan(allMaterials, allNotes),
         generateFAQMatrix(allMaterials, allNotes)
       ]);
 
       setFlashcards(newFlashcards);
       setQuizzes(newQuiz);
-      setEvents(prev => [...prev, ...newEvents]);
       setFaqs(newFaqs);
     } catch (error: any) {
       console.error("AI Generation Error:", error);

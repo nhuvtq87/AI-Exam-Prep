@@ -48,7 +48,7 @@ const NotesView: React.FC<NotesViewProps> = ({ notes, onAddNote, onUpdateNote, o
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Study Notes</h2>
-          <p className="text-gray-500">Your personal knowledge base for RAG querying.</p>
+          <p className="text-gray-500">Your thoughts, organized: Bridging the gap between AI insights and personal mastery.</p>
         </div>
         <button
           onClick={() => setIsAdding(true)}

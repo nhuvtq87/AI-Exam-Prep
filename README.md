@@ -1,20 +1,18 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# SJSU Spartan Exam Prep AI
 
-# Run and deploy your AI Studio app
+An intelligent exam preparation assistant for SJSU students. Automates study material ingestion to generate flashcards, practice quizzes, and dynamic study schedules using Gemini AI.
 
-This contains everything you need to run your app locally.
+## System Requirements
 
-View your app in AI Studio: https://ai.studio/apps/f2e9ee1e-f110-4345-a334-adf778f727fd
+- **Internet Access**: Required for interacting with the Gemini and OpenAI AI APIs.
+- **Multi-Model Failover**: Integrated with both Google Gemini and OpenAI to ensure high availability and consistent performance.
+- **Local Storage**: Used to persist your study sessions and preferences locally in your browser.
+- **No Hardware Permissions**: This application **does not** require access to your camera, microphone, or location. All data is provided via manual file uploads or URL ingestion.
 
-## Run Locally
+## Features
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- **Concept Simplifier**: Break down complex academic topics into simple explanations and analogies.
+- **FAQ Matrix**: Automatically extract core concepts and common questions from your materials.
+- **AI Tutor**: Chat with an AI grounded in your specific course materials and notes.
+- **Study Planner**: Dynamic scheduling based on your syllabus.
+- **Flashcards & Quizzes**: Automatically generated from your study materials.

@@ -152,6 +152,29 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isProcessing }) => {
     }
   };
 
+  /**
+   * Best-effort text extraction for legacy binary formats (.doc, .ppt).
+   * Scans the binary data for printable ASCII sequences.
+   */
+  const extractTextFromLegacy = async (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        // Extract printable chunks of 4+ characters to filter out binary noise
+        const matches = content.match(/[ -~]{4,}/g);
+        if (matches) {
+          const extracted = matches.join(' ').replace(/\s+/g, ' ').trim();
+          resolve(`[LEGACY FILE: ${file.name}]\nEXTRACTED CONTENT: ${extracted}`);
+        } else {
+          resolve(`No readable text content found in legacy binary file: ${file.name}`);
+        }
+      };
+      reader.onerror = () => resolve(`Failed to read legacy binary file: ${file.name}`);
+      reader.readAsText(file, 'ISO-8859-1');
+    });
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -173,7 +196,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isProcessing }) => {
           content = await extractTextFromPdf(file);
           mimeType = 'application/pdf';
         } else if (fileName.endsWith('.doc') || fileName.endsWith('.ppt')) {
-          content = `The user uploaded a legacy binary file (${fileName.endsWith('.doc') ? 'DOC' : 'PPT'}). Please inform them that modern formats like .docx or .pptx provide better context for study generation. Attempting to process metadata only. File Name: ${file.name}`;
+          content = await extractTextFromLegacy(file);
           mimeType = fileName.endsWith('.doc') ? 'application/msword' : 'application/vnd.ms-powerpoint';
         } else if (file.type.startsWith('image/')) {
           const reader = new FileReader();
@@ -233,7 +256,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isProcessing }) => {
       <div>
         <h3 className="text-lg font-semibold text-gray-800">Upload Course Material</h3>
         <p className="text-sm text-gray-500 max-w-sm mt-1">
-          Upload PDF, Images, Word (DOCX), or PowerPoint (PPTX) for high-fidelity study generation.
+          Upload PDF, Images, Word (DOC/DOCX), or PowerPoint (PPT/PPTX) for study generation.
         </p>
       </div>
       <input
@@ -264,7 +287,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isProcessing }) => {
         )}
       </button>
       <p className="text-[10px] text-gray-300 uppercase tracking-widest font-bold mt-4">
-        Spartans use DOCX/PPTX for best results
+        Supports legacy DOC/PPT with best-effort extraction
       </p>
     </div>
   );

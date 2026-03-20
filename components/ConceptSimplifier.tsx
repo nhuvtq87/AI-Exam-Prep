@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Gamepad2 } from 'lucide-react';
 import { simplifyConcept } from '../services/geminiService';
 import { SimplifiedConcept, CourseMaterial, Note } from '../types';
 
@@ -38,7 +39,8 @@ const ConceptSimplifier: React.FC<ConceptSimplifierProps> = ({ materials, notes 
     { id: 'simple', label: 'Plain English', icon: 'fa-comment-dots' },
     { id: 'analogy', label: 'Use Analogies', icon: 'fa-bridge' },
     { id: 'eli5', label: 'Explain Like I\'m 5', icon: 'fa-child' },
-    { id: 'spartan', label: 'Spartan Style', icon: 'fa-shield-halved' }
+    { id: 'spartan', label: 'Spartan Style', icon: 'fa-shield-halved' },
+    { id: 'gaming', label: 'Gaming Style', icon: 'lucide-gamepad', lucide: Gamepad2 }
   ];
 
   return (
@@ -116,7 +118,11 @@ const ConceptSimplifier: React.FC<ConceptSimplifierProps> = ({ materials, notes 
                     : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
                 }`}
               >
-                <i className={`fa-solid ${m.icon}`}></i>
+                {m.lucide ? (
+                  <m.lucide className="w-4 h-4" />
+                ) : (
+                  <i className={`fa-solid ${m.icon}`}></i>
+                )}
                 <span>{m.label}</span>
               </button>
             ))}
