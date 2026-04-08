@@ -4,13 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node server.js",
     "build": "vite build",
     "preview": "vite preview",
+    "lint": "tsc --noEmit",
     "start": "node server.js"
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
+    "express": "^5.2.1",
     "jszip": "3.10.1",
     "lucide-react": "^0.577.0",
     "mammoth": "1.6.0",
