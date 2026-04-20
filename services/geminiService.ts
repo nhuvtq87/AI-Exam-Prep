@@ -7,9 +7,9 @@ let openaiInstance: OpenAI | null = null;
 
 function getGemini() {
   if (!aiInstance) {
-    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY1;
+    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error("Gemini API key is missing. Please set API_KEY or GEMINI_API_KEY1.");
+      throw new Error("Gemini API key is missing. Please set API_KEY or GEMINI_API_KEY.");
     }
     aiInstance = new GoogleGenAI({ apiKey });
   }
