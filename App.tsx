@@ -25,11 +25,20 @@ const App: React.FC = () => {
   const [events, setEvents] = useState<StudyEvent[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
+  const [resources, setResources] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sources, setSources] = useState<any[]>([]);
   const [flashcardCount, setFlashcardCount] = useState(15);
   const [quizCount, setQuizCount] = useState(10);
   const [courseName, setCourseName] = useState('');
+
+  useEffect(() => {
+    // Fetch SJSU academic resources from the updated API
+    fetch('/api/resources')
+      .then(res => res.json())
+      .then(data => setResources(data.links || []))
+      .catch(err => console.error("Failed to fetch resources:", err));
+  }, []);
 
   const processMaterials = async (allMaterials: CourseMaterial[], allNotes: Note[], fCount?: number, qCount?: number) => {
     if (allMaterials.length === 0 && allNotes.length === 0) return;
@@ -268,7 +277,7 @@ const App: React.FC = () => {
           />
         );
       case 'tutor':
-        return <AITutor materials={materials} notes={notes} />;
+        return <AITutor materials={materials} notes={notes} sjsuResources={resources} />;
       case 'onboarding':
         return <OnboardingView onComplete={handleOnboardingComplete} isProcessing={isProcessing} />;
       default:

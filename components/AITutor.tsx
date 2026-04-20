@@ -11,12 +11,13 @@ interface Message {
 interface AITutorProps {
   materials: CourseMaterial[];
   notes: Note[];
+  sjsuResources?: any[];
 }
 
-const AITutor: React.FC<AITutorProps> = ({ materials, notes }) => {
-  const [activeTab, setActiveTab] = useState<'chat' | 'knowledge'>('chat');
+const AITutor: React.FC<AITutorProps> = ({ materials, notes, sjsuResources = [] }) => {
+  const [activeTab, setActiveTab] = useState<'chat' | 'knowledge' | 'resources'>('chat');
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'ai', text: "Hello! I'm your Spartan Prep AI. Ask me anything about your uploaded course materials!" }
+    { role: 'ai', text: "Hello! I'm your Spartan AI. Ask me anything about your SJSU materials or academic path!" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -46,48 +47,10 @@ const AITutor: React.FC<AITutorProps> = ({ materials, notes }) => {
     }
   };
 
-  return (
-    <div className="h-[calc(100vh-12rem)] max-w-4xl mx-auto flex flex-col bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-6 bg-sjsu-blue text-white flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <i className="fa-solid fa-robot text-xl"></i>
-            </div>
-            <div>
-                <h2 className="font-bold">Academic Tutor</h2>
-                <p className="text-xs text-blue-200">Powered by Gemini AI</p>
-            </div>
-        </div>
-        <div className="flex items-center space-x-2 text-xs font-semibold bg-green-500/20 px-3 py-1 rounded-full text-green-300">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span>Ready to assist</span>
-        </div>
-      </div>
-
-      {/* Tab Bar */}
-      <div className="flex border-b border-gray-100 bg-white">
-        <button 
-          onClick={() => setActiveTab('chat')}
-          className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${
-            activeTab === 'chat' ? 'text-sjsu-blue border-b-2 border-sjsu-blue' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <i className="fa-solid fa-message mr-2"></i>
-          Chat
-        </button>
-        <button 
-          onClick={() => setActiveTab('knowledge')}
-          className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${
-            activeTab === 'knowledge' ? 'text-sjsu-blue border-b-2 border-sjsu-blue' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <i className="fa-solid fa-database mr-2"></i>
-          Knowledge Base
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-hidden flex flex-col">
-        {activeTab === 'chat' ? (
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'chat':
+        return (
           <>
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
               {messages.map((m, i) => (
@@ -133,7 +96,9 @@ const AITutor: React.FC<AITutorProps> = ({ materials, notes }) => {
               <p className="text-[10px] text-gray-400 mt-2 text-center uppercase tracking-widest font-bold">Confidential SJSU Study Space</p>
             </div>
           </>
-        ) : (
+        );
+      case 'knowledge':
+        return (
           <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-gray-50/50">
             <div>
               <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Course Materials ({materials.length})</h3>
@@ -185,7 +150,105 @@ const AITutor: React.FC<AITutorProps> = ({ materials, notes }) => {
               </p>
             </div>
           </div>
-        )}
+        );
+      case 'resources':
+        return (
+          <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-gray-50/50">
+            <div className="space-y-4">
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">SJSU Academic Concierge</h3>
+              <div className="grid grid-cols-1 gap-4">
+                {sjsuResources.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-3xl border border-gray-100 italic text-gray-400 text-xs">
+                    No additional resources available right now.
+                  </div>
+                ) : (
+                  sjsuResources.map((res, i) => (
+                    <a 
+                      key={i} 
+                      href={res.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-sjsu-blue/20 transition-all group flex items-start space-x-4"
+                    >
+                      <div className="w-10 h-10 bg-blue-50 text-sjsu-blue rounded-xl flex items-center justify-center group-hover:bg-sjsu-blue group-hover:text-white transition-colors">
+                        <i className="fa-solid fa-link"></i>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-gray-800 group-hover:text-sjsu-blue transition-colors">{res.name}</h4>
+                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">{res.description}</p>
+                      </div>
+                      <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-300 mt-1"></i>
+                    </a>
+                  ))
+                )}
+              </div>
+            </div>
+            
+            <div className="p-6 bg-sjsu-gold/10 rounded-2xl border border-sjsu-gold/20 flex items-start space-x-4">
+               <div className="w-8 h-8 bg-sjsu-gold text-sjsu-blue rounded-full flex items-center justify-center flex-shrink-0">
+                  <i className="fa-solid fa-lightbulb text-xs"></i>
+               </div>
+               <div>
+                  <h4 className="text-[10px] font-black text-sjsu-blue uppercase tracking-widest mb-1">Spartan Tip</h4>
+                  <p className="text-xs text-gray-700">These resources are professionally vetted. Use the King Library link for deep academic research when Spartan AI identifies missing data in your local files.</p>
+               </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="h-[calc(100vh-12rem)] max-w-4xl mx-auto flex flex-col bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="p-6 bg-sjsu-blue text-white flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <i className="fa-solid fa-robot text-xl"></i>
+            </div>
+            <div>
+                <h2 className="font-bold">Academic Tutor</h2>
+                <p className="text-xs text-blue-200">Powered by Spartan AI</p>
+            </div>
+        </div>
+        <div className="flex items-center space-x-2 text-xs font-semibold bg-green-500/20 px-3 py-1 rounded-full text-green-300">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span>Ready to assist</span>
+        </div>
+      </div>
+
+      {/* Tab Bar */}
+      <div className="flex border-b border-gray-100 bg-white">
+        <button 
+          onClick={() => setActiveTab('chat')}
+          className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${
+            activeTab === 'chat' ? 'text-sjsu-blue border-b-2 border-sjsu-blue' : 'text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          <i className="fa-solid fa-message mr-2"></i>
+          Chat
+        </button>
+        <button 
+          onClick={() => setActiveTab('knowledge')}
+          className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${
+            activeTab === 'knowledge' ? 'text-sjsu-blue border-b-2 border-sjsu-blue' : 'text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          <i className="fa-solid fa-database mr-2"></i>
+          Context
+        </button>
+        <button 
+          onClick={() => setActiveTab('resources')}
+          className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${
+            activeTab === 'resources' ? 'text-sjsu-blue border-b-2 border-sjsu-blue' : 'text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          <i className="fa-solid fa-link-slash mr-2"></i>
+          Resources
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {renderContent()}
       </div>
     </div>
   );

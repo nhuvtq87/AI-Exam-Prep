@@ -14,7 +14,33 @@ async function startServer() {
 
   // API routes go here
   app.get('/api/status', (req, res) => {
-    res.json({ status: "Spartan AI is online" });
+    res.json({ 
+      status: "Spartan AI is online",
+      environment: process.env.NODE_ENV || 'development',
+      campus: "San Jose State University",
+      version: "1.2.0"
+    });
+  });
+
+  // SJSU Academic Resources Endpoint
+  app.get('/api/resources', (req, res) => {
+    res.json({
+      links: [
+        { name: "SJSU King Library", url: "https://library.sjsu.edu/", description: "Research databases and academic journals." },
+        { name: "SJSU Writing Center", url: "https://www.sjsu.edu/writingcenter/", description: "Help with academic writing and citations." },
+        { name: "SJSU Peer Connections", url: "https://www.sjsu.edu/peerconnections/", description: "Tutoring and mentoring services." },
+        { name: "SJSU Canvas", url: "https://sjsu.instructure.com/", description: "Official SJSU learning management system." },
+        { name: "Spartan Study Room Booking", url: "https://sjsu.libcal.com/", description: "Book study spaces in the King Library." }
+      ]
+    });
+  });
+
+  // Placeholder for Study Analytics (Front-end currently handles state)
+  app.get('/api/analytics/summary', (req, res) => {
+    res.json({
+      message: "Analytics are currently stored locally. Connect Firestore for cloud syncing.",
+      features: ["Flashcard Mastery", "Quiz Performance", "Study Duration", "Topic Concentration"]
+    });
   });
 
   if (process.env.NODE_ENV !== 'production') {

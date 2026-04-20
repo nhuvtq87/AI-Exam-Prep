@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, Part } from "@google/genai";
+import { GoogleGenAI, Type, Part, ThinkingLevel } from "@google/genai";
 import OpenAI from "openai";
 import { Flashcard, QuizQuestion, StudyEvent, FAQItem, SimplifiedConcept, CourseMaterial, Note } from "../types";
 
@@ -7,9 +7,9 @@ let openaiInstance: OpenAI | null = null;
 
 function getGemini() {
   if (!aiInstance) {
-    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY1;
     if (!apiKey) {
-      throw new Error("Gemini API key is missing. Please set API_KEY or GEMINI_API_KEY.");
+      throw new Error("Gemini API key is missing. Please set API_KEY or GEMINI_API_KEY1.");
     }
     aiInstance = new GoogleGenAI({ apiKey });
   }
@@ -31,7 +31,7 @@ function getOpenAI() {
  * Converts CourseMaterial and Note arrays into Gemini-compatible Parts.
  * Implements streamlined RAG by truncating extremely large items to high-yield sections.
  */
-const MAX_ITEM_CONTEXT = 20000; // ~5000 tokens per item limit for efficiency
+const MAX_ITEM_CONTEXT = 30000; // Increased context window for Gemini 3
 
 const contextToParts = (materials: CourseMaterial[], notes: Note[] = []): Part[] => {
   const materialParts = materials.map(m => {
@@ -89,18 +89,19 @@ const contextToMessages = (materials: CourseMaterial[], notes: Note[] = []) => {
   return content;
 };
 
-const SYSTEM_INSTRUCTION = `You are an expert SJSU academic tutor and document analyst. 
+const SYSTEM_INSTRUCTION = `You are "Spartan AI," a premier academic concierge for San Jose State University students. 
 
 STRICT RULES FOR DATA PROCESSING:
-1. NO EXTERNAL KNOWLEDGE: Use ONLY the provided material. If information is missing, say so.
-2. NOISE FILTERING: Automatically identify and ignore repetitive headers, footers, page numbers, EBSCOhost copyright notices, and university timestamps. Focus ONLY on the core academic content.
-3. HANDWRITING TRANSCRIPTION: If images or PDFs contain handwritten notes, whiteboard diagrams, or markups on tables, transcribe them with high fidelity and integrate them into the context.
-4. MAIN CONTENT ONLY: Ignore navigation menus, ads, and UI boilerplate.
-5. ERROR HANDLING: If the provided context is empty or states 'Failed to parse', do not attempt to generate content. Instead, return a JSON error object: { "error": "No academic data available" }.
-6. NO AUTOMATIC TASK CREATION: Do NOT generate or suggest automatic entries for the Study Planner. The Study Planner is a MANUAL-ENTRY tool only. All dates, deadlines, and times found in the documents must be presented ONLY as informational text (e.g., in the FAQ Matrix or summaries) and never as structured task objects for automatic syncing.
-7. PLAIN-TEXT ONLY: You are strictly forbidden from using Markdown formatting in your responses. Do not use bold (**), italics (*), headers (#), or any other Markdown symbols. Use standard Sentence Case for all text (do not use ALL CAPS for headers). For section titles, use plain text on its own line followed by a colon or a blank line. Use simple hyphens (-) for lists.
+1. NO EXTERNAL KNOWLEDGE: Use ONLY the provided material. If information is missing, explicitly state "This information is not present in your local coursework."
+2. NOISE FILTERING: Automatically identify and ignore repetitive headers, footers, page numbers, and university UI boilerplate. focus on syllabi, lecture notes, and assignment prompts.
+3. SJSU CONTEXT: When possible, reference SJSU-specific resources (e.g., King Library, SJSU Writing Center, Peer Connections) if the user's materials mention them.
+4. MAIN CONTENT ONLY: Ignore navigation menus and ads from pasted web links.
+5. ERROR HANDLING: If the provided context is empty or states 'Failed to parse', return a JSON error object: { "error": "No academic data available" }.
+6. NO AUTOMATIC TASK CREATION: All dates, deadlines, and times found in the documents must be presented ONLY as informational text.
+7. FORMATTING: Use clear, scannable structures. Forbidden from using ALL CAPS for headers. Use simple hyphens (-) for lists.
+8. PEDAGOGY: Prefer "Socratic" guidance in Chat mode—help students find the answer rather than just giving it.
 
-Your goal is to provide high-fidelity academic support based strictly on the user's uploaded materials.`;
+Your goal is to provide high-fidelity academic support based strictly on the user's uploaded materials while maintaining the helpful, focused identity of an SJSU Spartan Tutor.`;
 
 /**
  * Failover wrapper to handle Gemini errors by falling back to OpenAI.
@@ -112,7 +113,7 @@ async function callWithFailover(geminiCall: () => Promise<string>, openaiCall: (
     const status = error?.status || error?.response?.status;
     const message = error?.message || "";
     
-    // Check for 503 (Service Unavailable) or 429 (Rate Limit)
+    // Check for 5xx errors or 429
     if (status === 503 || status === 429 || message.includes("503") || message.includes("429")) {
       console.warn("Gemini service issue detected. Backup Model Active (OpenAI).");
       return await openaiCall();
@@ -150,7 +151,7 @@ export const fetchLinkContent = async (url: string): Promise<{ text: string; sou
 };
 
 export const generateFlashcards = async (materials: CourseMaterial[], notes: Note[] = [], count: number = 15): Promise<Flashcard[]> => {
-  const prompt = `Generate a deck of ${count} high-yield flashcards based on the provided materials. Focus on critical terminology, core theories, and complex relationships. Ensure questions use 'Active Recall' principles.`;
+  const prompt = `Generate a deck of ${count} high-yield flashcards. Focus on critical SJSU course terminology, core theories, and complex academic relationships found in the docs.`;
   
   const geminiCall = async () => {
     const ai = getGemini();
@@ -203,15 +204,16 @@ export const generateFlashcards = async (materials: CourseMaterial[], notes: Not
 };
 
 export const generateQuiz = async (materials: CourseMaterial[], notes: Note[] = [], count: number = 10): Promise<QuizQuestion[]> => {
-  const prompt = `Create a rigorous ${count}-question multiple choice practice exam based strictly on the provided material. Cover core concepts, technical details, and potential 'trick' areas.`;
+  const prompt = `Create a rigorous ${count}-question San Jose State University practice exam based strictly on the provided material. Ensure questions mapping to Bloom's Taxonomy levels of understanding, application, and analysis.`;
   
   const geminiCall = async () => {
     const ai = getGemini();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3.1-pro-preview',
       contents: { parts: [...contextToParts(materials, notes), { text: prompt }] },
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -257,12 +259,12 @@ export const generateQuiz = async (materials: CourseMaterial[], notes: Note[] = 
 };
 
 export const extractStudyPlan = async (materials: CourseMaterial[], notes: Note[] = []): Promise<StudyEvent[]> => {
-  const prompt = "Review these materials and extract all key exams and assignments. Identify which course/subject each belongs to. STRICT RULE: Extract ONLY the task description (title) and the course/subject name. DO NOT extract, parse, or guess any due dates. Leave the 'date' field as an empty string for all items.";
+  const prompt = "Extract all key academic dates. Identify which course each belongs to. DO NOT guess any due dates—extract ONLY what is written. Leave the 'date' field as empty string if vague.";
   
   const geminiCall = async () => {
     const ai = getGemini();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.1-flash-lite-preview',
       contents: { parts: [...contextToParts(materials, notes), { text: prompt }] },
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
@@ -311,7 +313,7 @@ export const extractStudyPlan = async (materials: CourseMaterial[], notes: Note[
 };
 
 export const generateFAQMatrix = async (materials: CourseMaterial[], notes: Note[] = []): Promise<FAQItem[]> => {
-  const prompt = "Extract a list of 'Frequently Asked Questions' that represent the core knowledge required for an exam. ALSO, identify all critical dates, times, and deadlines (e.g., exam dates, assignment due dates) found in the materials and include them as FAQ items under a 'Deadlines & Schedule' category. Organize everything into an FAQ Matrix.";
+  const prompt = "Generate an FAQ based CORE SJSU academic knowledge required for an exam. Include dates found in the syllabus. Return as an array of items with category, question, and answer.";
   
   const geminiCall = async () => {
     const ai = getGemini();
@@ -360,22 +362,12 @@ export const generateFAQMatrix = async (materials: CourseMaterial[], notes: Note
 export const simplifyConcept = async (concept: string, level: string = "simple"): Promise<SimplifiedConcept> => {
   let styleInstruction = "";
   if (level === "gaming") {
-    styleInstruction = `
-    TONE: High-energy, engaging, and gamer-centric.
-    METAPHORS: Use gaming terminology to explain academic concepts.
-    - Mastering a topic = "Leveling Up"
-    - Difficult exams = "Boss Battles"
-    - Core concepts = "Main Quests" or "Base Stats"
-    - Useful tips/shortcuts = "Buffs" or "Cheat Codes"
-    - Learning outcomes = "XP" or "Unlockables"
-    - Distractions = "Lag" or "Side Quests"
-    `;
+    styleInstruction = `TONE: High-energy, gamer-centric. Metaphors: Mastered = Level Up, Boss Battles = Exams, Cheat Codes = Study Tips.`;
+  } else if (level === "spartan") {
+    styleInstruction = `TONE: SJSU Spartan Spirit. Focus on "Powering Silicon Valley" and academic grit.`;
   }
 
-  const prompt = `Simplify the following academic concept. STRICT RULE: Use ONLY the information provided in the concept text below. 
-  Tone/Level: ${level}. 
-  ${styleInstruction}
-  Concept: ${concept}`;
+  const prompt = `Simplify this SJSU academic concept. Tone/Level: ${level}. ${styleInstruction} Concept: ${concept}`;
   
   const geminiCall = async () => {
     const ai = getGemini();
