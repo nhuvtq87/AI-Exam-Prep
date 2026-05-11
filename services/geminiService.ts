@@ -1,9 +1,12 @@
-import { GoogleGenAI, Type, Part, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI, Type, Part } from "@google/genai";
 import OpenAI from "openai";
+import crypto from "crypto";
 import { Flashcard, QuizQuestion, StudyEvent, FAQItem, SimplifiedConcept, CourseMaterial, Note } from "../types";
 
 let aiInstance: GoogleGenAI | null = null;
 let openaiInstance: OpenAI | null = null;
+
+const isBrowser = typeof window !== 'undefined';
 
 function getGemini() {
   if (!aiInstance) {
@@ -117,12 +120,22 @@ async function callWithFailover(geminiCall: () => Promise<string>, openaiCall: (
 }
 
 export const fetchLinkContent = async (url: string): Promise<{ text: string; sources: any[] }> => {
+  if (isBrowser) {
+    const res = await fetch('/api/ai/fetch-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    if (!res.ok) throw new Error("Failed to fetch link content via server.");
+    return res.json();
+  }
+
   const geminiCall = async () => {
     const ai = getGemini();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: `Analyze the content of the article at this URL: ${url}. 
-      STRICT RULE: Extract ONLY the main academic or informational content present on the page.` }] },
+      model: 'gemini-1.5-flash',
+      contents: [{ role: 'user', parts: [{ text: `Analyze the content of the article at this URL: ${url}. 
+      STRICT RULE: Extract ONLY the main academic or informational content present on the page.` }] }],
       config: { tools: [{ googleSearch: {} }] },
     });
     return JSON.stringify({ text: response.text, sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || [] });
@@ -145,13 +158,23 @@ export const fetchLinkContent = async (url: string): Promise<{ text: string; sou
 };
 
 export const generateFlashcards = async (materials: CourseMaterial[], notes: Note[] = [], count: number = 15): Promise<Flashcard[]> => {
+  if (isBrowser) {
+    const res = await fetch('/api/ai/flashcards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ materials, notes, count })
+    });
+    if (!res.ok) throw new Error("Failed to generate flashcards via server.");
+    return res.json();
+  }
+
   const prompt = `Generate a deck of ${count} high-yield flashcards. Focus on critical SJSU course terminology, core theories, and complex academic relationships found in the docs.`;
   
   const geminiCall = async () => {
     const ai = getGemini();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [...contextToParts(materials, notes), { text: prompt }] },
+      model: 'gemini-1.5-flash',
+      contents: [{ role: 'user', parts: [...contextToParts(materials, notes), { text: prompt }] }],
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
@@ -198,13 +221,23 @@ export const generateFlashcards = async (materials: CourseMaterial[], notes: Not
 };
 
 export const generateQuiz = async (materials: CourseMaterial[], notes: Note[] = [], count: number = 10): Promise<QuizQuestion[]> => {
+  if (isBrowser) {
+    const res = await fetch('/api/ai/quiz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ materials, notes, count })
+    });
+    if (!res.ok) throw new Error("Failed to generate quiz via server.");
+    return res.json();
+  }
+
   const prompt = `Create a rigorous ${count}-question San Jose State University practice exam based strictly on the provided material. Ensure questions mapping to Bloom's Taxonomy levels of understanding, application, and analysis.`;
   
   const geminiCall = async () => {
     const ai = getGemini();
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
-      contents: { parts: [...contextToParts(materials, notes), { text: prompt }] },
+      model: 'gemini-1.5-pro',
+      contents: [{ role: 'user', parts: [...contextToParts(materials, notes), { text: prompt }] }],
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
@@ -252,13 +285,23 @@ export const generateQuiz = async (materials: CourseMaterial[], notes: Note[] = 
 };
 
 export const extractStudyPlan = async (materials: CourseMaterial[], notes: Note[] = []): Promise<StudyEvent[]> => {
+  if (isBrowser) {
+    const res = await fetch('/api/ai/study-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ materials, notes })
+    });
+    if (!res.ok) throw new Error("Failed to extract study plan via server.");
+    return res.json();
+  }
+
   const prompt = "Extract all key academic dates. Identify which course each belongs to. DO NOT guess any due dates—extract ONLY what is written. Leave the 'date' field as empty string if vague.";
   
   const geminiCall = async () => {
     const ai = getGemini();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [...contextToParts(materials, notes), { text: prompt }] },
+      model: 'gemini-1.5-flash',
+      contents: [{ role: 'user', parts: [...contextToParts(materials, notes), { text: prompt }] }],
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
@@ -306,13 +349,23 @@ export const extractStudyPlan = async (materials: CourseMaterial[], notes: Note[
 };
 
 export const generateFAQMatrix = async (materials: CourseMaterial[], notes: Note[] = []): Promise<FAQItem[]> => {
+  if (isBrowser) {
+    const res = await fetch('/api/ai/faq', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ materials, notes })
+    });
+    if (!res.ok) throw new Error("Failed to generate FAQ Matrix via server.");
+    return res.json();
+  }
+
   const prompt = "Generate an FAQ based CORE SJSU academic knowledge required for an exam. Include dates found in the syllabus. Return as an array of items with category, question, and answer.";
   
   const geminiCall = async () => {
     const ai = getGemini();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [...contextToParts(materials, notes), { text: prompt }] },
+      model: 'gemini-1.5-flash',
+      contents: [{ role: 'user', parts: [...contextToParts(materials, notes), { text: prompt }] }],
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
@@ -353,6 +406,16 @@ export const generateFAQMatrix = async (materials: CourseMaterial[], notes: Note
 };
 
 export const simplifyConcept = async (concept: string, level: string = "simple"): Promise<SimplifiedConcept> => {
+  if (isBrowser) {
+    const res = await fetch('/api/ai/simplify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ concept, level })
+    });
+    if (!res.ok) throw new Error("Failed to simplify concept via server.");
+    return res.json();
+  }
+
   let styleInstruction = "";
   if (level === "gaming") {
     styleInstruction = `TONE: High-energy, gamer-centric. Metaphors: Mastered = Level Up, Boss Battles = Exams, Cheat Codes = Study Tips.`;
@@ -365,8 +428,8 @@ export const simplifyConcept = async (concept: string, level: string = "simple")
   const geminiCall = async () => {
     const ai = getGemini();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: prompt }] },
+      model: 'gemini-1.5-flash',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -401,11 +464,21 @@ export const simplifyConcept = async (concept: string, level: string = "simple")
 };
 
 export const chatWithContext = async (query: string, materials: CourseMaterial[], notes: Note[] = []) => {
+  if (isBrowser) {
+    const res = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, materials, notes })
+    });
+    if (!res.ok) throw new Error("Failed to chat via server.");
+    return res.text();
+  }
+
   const geminiCall = async () => {
     const ai = getGemini();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [...contextToParts(materials, notes), { text: `Question: ${query}` }] },
+      model: 'gemini-1.5-flash',
+      contents: [{ role: 'user', parts: [...contextToParts(materials, notes), { text: `Question: ${query}` }] }],
       config: { systemInstruction: SYSTEM_INSTRUCTION }
     });
     return response.text;

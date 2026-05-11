@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
+import * as geminiService from './services/geminiService';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +14,84 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json({ limit: '50mb' }));
+
+  // AI Generation Routes
+  app.post('/api/ai/flashcards', async (req, res) => {
+    try {
+      const { materials, notes, count } = req.body;
+      const flashcards = await geminiService.generateFlashcards(materials, notes, count);
+      res.json(flashcards);
+    } catch (error: any) {
+      console.error("AI Flashcards Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/ai/quiz', async (req, res) => {
+    try {
+      const { materials, notes, count } = req.body;
+      const quiz = await geminiService.generateQuiz(materials, notes, count);
+      res.json(quiz);
+    } catch (error: any) {
+      console.error("AI Quiz Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/ai/faq', async (req, res) => {
+    try {
+      const { materials, notes } = req.body;
+      const faqs = await geminiService.generateFAQMatrix(materials, notes);
+      res.json(faqs);
+    } catch (error: any) {
+      console.error("AI FAQ Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/ai/study-plan', async (req, res) => {
+    try {
+      const { materials, notes } = req.body;
+      const plan = await geminiService.extractStudyPlan(materials, notes);
+      res.json(plan);
+    } catch (error: any) {
+      console.error("AI Study Plan Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/ai/simplify', async (req, res) => {
+    try {
+      const { concept, level } = req.body;
+      const result = await geminiService.simplifyConcept(concept, level);
+      res.json(result);
+    } catch (error: any) {
+      console.error("AI Simplify Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/ai/chat', async (req, res) => {
+    try {
+      const { query, materials, notes } = req.body;
+      const response = await geminiService.chatWithContext(query, materials, notes);
+      res.send(response);
+    } catch (error: any) {
+      console.error("AI Chat Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/ai/fetch-link', async (req, res) => {
+    try {
+      const { url } = req.body;
+      const result = await geminiService.fetchLinkContent(url);
+      res.json(result);
+    } catch (error: any) {
+      console.error("AI Fetch Link Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // API routes go here
   app.get('/api/status', (req, res) => {
