@@ -29,9 +29,8 @@ function getOpenAI() {
 
 /**
  * Converts CourseMaterial and Note arrays into Gemini-compatible Parts.
- * Implements streamlined RAG by truncating extremely large items to high-yield sections.
  */
-const MAX_ITEM_CONTEXT = 30000; // Increased context window for Gemini 3
+const MAX_ITEM_CONTEXT = 30000;
 
 const contextToParts = (materials: CourseMaterial[], notes: Note[] = []): Part[] => {
   const materialParts = materials.map(m => {
@@ -46,7 +45,6 @@ const contextToParts = (materials: CourseMaterial[], notes: Note[] = []): Part[]
       };
     }
     
-    // Streamlined RAG: Truncate to the most relevant academic sections
     const content = m.content.length > MAX_ITEM_CONTEXT 
       ? m.content.substring(0, MAX_ITEM_CONTEXT) + "\n\n[... Remaining content truncated for processing efficiency ...]"
       : m.content;
@@ -103,9 +101,6 @@ STRICT RULES FOR DATA PROCESSING:
 
 Your goal is to provide high-fidelity academic support based strictly on the user's uploaded materials while maintaining the helpful, focused identity of an SJSU Spartan Tutor.`;
 
-/**
- * Failover wrapper to handle Gemini errors by falling back to OpenAI.
- */
 async function callWithFailover(geminiCall: () => Promise<string>, openaiCall: () => Promise<string>): Promise<string> {
   try {
     return await geminiCall();
@@ -113,7 +108,6 @@ async function callWithFailover(geminiCall: () => Promise<string>, openaiCall: (
     const status = error?.status || error?.response?.status;
     const message = error?.message || "";
     
-    // Check for 5xx errors or 429
     if (status === 503 || status === 429 || message.includes("503") || message.includes("429")) {
       console.warn("Gemini service issue detected. Backup Model Active (OpenAI).");
       return await openaiCall();
@@ -127,8 +121,8 @@ export const fetchLinkContent = async (url: string): Promise<{ text: string; sou
     const ai = getGemini();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Analyze the content of the article at this URL: ${url}. 
-      STRICT RULE: Extract ONLY the main academic or informational content present on the page.`,
+      contents: { parts: [{ text: `Analyze the content of the article at this URL: ${url}. 
+      STRICT RULE: Extract ONLY the main academic or informational content present on the page.` }] },
       config: { tools: [{ googleSearch: {} }] },
     });
     return JSON.stringify({ text: response.text, sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || [] });
@@ -263,7 +257,7 @@ export const extractStudyPlan = async (materials: CourseMaterial[], notes: Note[
   const geminiCall = async () => {
     const ai = getGemini();
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite-preview',
+      model: 'gemini-3-flash-preview',
       contents: { parts: [...contextToParts(materials, notes), { text: prompt }] },
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
@@ -372,7 +366,7 @@ export const simplifyConcept = async (concept: string, level: string = "simple")
     const ai = getGemini();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: prompt,
+      contents: { parts: [{ text: prompt }] },
       config: {
         responseMimeType: "application/json",
         responseSchema: {

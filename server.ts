@@ -12,6 +12,8 @@ async function startServer() {
   // CRITICAL: Port must be 3000 for the AI Studio environment
   const PORT = 3000;
 
+  app.use(express.json({ limit: '50mb' }));
+
   // API routes go here
   app.get('/api/status', (req, res) => {
     res.json({ 
